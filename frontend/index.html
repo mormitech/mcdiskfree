@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>mcdiskfree</title>
+</head>
+<body>
+<header>
+    <button id="disks">Disks</button>
+    <button id="choose">Choose folder…</button>
+    <button id="rescan" disabled>Rescan</button>
+    <button id="up" title="One folder up" disabled>↑ Up</button>
+    <nav id="crumbs"></nav>
+    <div id="space" hidden></div>
+</header>
+<main>
+    <section id="chart"><svg id="sun"></svg><div id="center"></div></section>
+    <aside>
+        <div id="list"></div>
+        <div id="basket" hidden></div>
+    </aside>
+    <div id="splash"></div>
+</main>
+<div id="tip" hidden></div>
+<script src="./src/main.js" type="module"></script>
+</body>
+</html>
