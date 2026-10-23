@@ -137,14 +137,14 @@ func prune(n *Node, depth int) *Node {
 	return out
 }
 
-// removeFromTree drops the node at path and takes its size off every folder above it.
-func removeFromTree(root *Node, path string) bool {
+// locate returns the folders from root down to the parent of path, and the index of path among that parent's children.
+func locate(root *Node, path string) (chain []*Node, idx int, ok bool) {
 	rel, err := filepath.Rel(root.Path, path)
 	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return false
+		return nil, 0, false
 	}
 	parts := strings.Split(rel, string(filepath.Separator))
-	chain := []*Node{root}
+	chain = []*Node{root}
 	for _, part := range parts[:len(parts)-1] {
 		var next *Node
 		for _, c := range chain[len(chain)-1].Children {
@@ -154,20 +154,48 @@ func removeFromTree(root *Node, path string) bool {
 			}
 		}
 		if next == nil {
-			return false
+			return nil, 0, false
 		}
 		chain = append(chain, next)
 	}
-	parent := chain[len(chain)-1]
-	for i, c := range parent.Children {
+	for i, c := range chain[len(chain)-1].Children {
 		if c.Name == parts[len(parts)-1] {
-			parent.Children = append(parent.Children[:i], parent.Children[i+1:]...)
-			for _, a := range chain {
-				a.Size -= c.Size
-				a.Items -= c.Items
-			}
-			return true
+			return chain, i, true
 		}
 	}
-	return false
+	return nil, 0, false
+}
+
+// removeFromTree drops the node at path and takes its size off every folder above it.
+func removeFromTree(root *Node, path string) bool {
+	chain, i, ok := locate(root, path)
+	if !ok {
+		return false
+	}
+	parent := chain[len(chain)-1]
+	gone := parent.Children[i]
+	parent.Children = append(parent.Children[:i], parent.Children[i+1:]...)
+	for _, a := range chain {
+		a.Size -= gone.Size
+		a.Items -= gone.Items
+	}
+	return true
+}
+
+// replaceNode swaps the node at path for fresh (a new scan of the same folder) and corrects the sizes above it.
+func replaceNode(root *Node, path string, fresh *Node) bool {
+	chain, i, ok := locate(root, path)
+	if !ok {
+		return false
+	}
+	parent := chain[len(chain)-1]
+	old := parent.Children[i]
+	parent.Children[i] = fresh
+	for k := len(chain) - 1; k >= 0; k-- {
+		chain[k].Size += fresh.Size - old.Size
+		chain[k].Items += fresh.Items - old.Items
+		kids := chain[k].Children
+		sort.SliceStable(kids, func(x, y int) bool { return kids[x].Size > kids[y].Size })
+	}
+	return true
 }

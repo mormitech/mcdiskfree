@@ -19,6 +19,7 @@ type App struct {
 	ctx    context.Context
 	mu     sync.Mutex
 	root   *Node
+	scanAt int64 // unix seconds of the full scan the tree comes from
 	cancel context.CancelFunc
 }
 
@@ -37,8 +38,15 @@ func (a *App) ChooseFolder() (string, error) {
 	return wr.OpenDirectoryDialog(a.ctx, wr.OpenDialogOptions{Title: "Folder to scan", DefaultDirectory: a.Home()})
 }
 
-// Scan walks path and returns the top of the tree. Progress is sent as "progress" events (files seen so far).
-func (a *App) Scan(path string) (*Node, error) {
+// ScanResult is a tree for the UI. At is when the scan it came from was made (unix seconds).
+type ScanResult struct {
+	Node   *Node `json:"node"`
+	At     int64 `json:"at"`
+	Cached bool  `json:"cached"`
+}
+
+// walkWithProgress scans path, sending "progress" events (files seen so far), and can be stopped with Cancel.
+func (a *App) walkWithProgress(path string) (*Node, error) {
 	a.Cancel()
 	ctx, cancel := context.WithCancel(a.ctx)
 	a.mu.Lock()
@@ -69,10 +77,76 @@ func (a *App) Scan(path string) (*Node, error) {
 	if ctx.Err() != nil {
 		return nil, errors.New("scan cancelled")
 	}
+	return root, nil
+}
+
+// persistLocked saves the current tree to the cache in the background. The caller holds a.mu.
+func (a *App) persistLocked() {
+	if a.root == nil {
+		return
+	}
+	root, at, tree := a.root.Path, a.scanAt, compact(a.root)
+	go func() {
+		if err := writeSnapshot(root, at, tree); err != nil {
+			println("cache not saved:", err.Error())
+		}
+	}()
+}
+
+// Scan walks path in full, replaces the cached result and returns the top of the tree.
+func (a *App) Scan(path string) (*ScanResult, error) {
+	root, err := a.walkWithProgress(path)
+	if err != nil {
+		return nil, err
+	}
 	a.mu.Lock()
-	a.root = root
+	defer a.mu.Unlock()
+	a.root, a.scanAt = root, time.Now().Unix()
+	a.persistLocked()
+	return &ScanResult{Node: prune(root, viewDepth), At: a.scanAt}, nil
+}
+
+// CachedScan loads the last saved scan of path. It returns nil when there is none.
+func (a *App) CachedScan(path string) *ScanResult {
+	s, err := loadSnapshot(path)
+	if err != nil {
+		return nil
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.root, a.scanAt = s.Tree, s.At
+	return &ScanResult{Node: prune(s.Tree, viewDepth), At: s.At, Cached: true}
+}
+
+// CacheTime is when path was last scanned in full (unix seconds), or 0 when it never was.
+func (a *App) CacheTime(path string) int64 { return cacheTime(path) }
+
+// RescanFolder walks only path, merges the result into the scanned tree (sizes above it are corrected) and saves it.
+func (a *App) RescanFolder(path string) (*ScanResult, error) {
+	a.mu.Lock()
+	n := (*Node)(nil)
+	if a.root != nil {
+		n = find(a.root, path)
+	}
+	atRoot := a.root != nil && a.root.Path == path
 	a.mu.Unlock()
-	return prune(root, viewDepth), nil
+	if n == nil || !n.IsDir {
+		return nil, errors.New("not a scanned folder: " + path)
+	}
+	if atRoot {
+		return a.Scan(path)
+	}
+	fresh, err := a.walkWithProgress(path)
+	if err != nil {
+		return nil, err
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if !replaceNode(a.root, path, fresh) {
+		return nil, errors.New("folder vanished from the tree: " + path)
+	}
+	a.persistLocked()
+	return &ScanResult{Node: prune(find(a.root, path), viewDepth), At: a.scanAt}, nil
 }
 
 // Cancel stops a running scan.
@@ -143,5 +217,16 @@ func (a *App) Trash(paths []string) TrashResult {
 		a.mu.Unlock()
 		res.Trashed = append(res.Trashed, p)
 	}
+	if len(res.Trashed) > 0 {
+		a.mu.Lock()
+		a.persistLocked()
+		a.mu.Unlock()
+	}
 	return res
 }
+
+// Version is the app version from wails.json.
+func (a *App) Version() string { return version() }
+
+// Platform is the operating system the app runs on ("darwin", "windows" or "linux"), so the UI can use its own words.
+func (a *App) Platform() string { return runtime.GOOS }

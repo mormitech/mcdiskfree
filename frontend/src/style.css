@@ -13,11 +13,12 @@ header { display: flex; gap: 8px; align-items: center; padding: 10px 14px; borde
 button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .45; cursor: default; }
-#crumbs { margin-left: 8px; color: var(--muted); white-space: nowrap; overflow: hidden; flex: 1; }
-#crumbs span[data-p] { cursor: pointer; }
+#crumbs { color: var(--muted); text-align: center; line-height: 1.7; padding: 10px 16px 0; min-height: 30px; }
+#crumbs span[data-p] { cursor: pointer; display: inline-block; white-space: nowrap; }
 #crumbs span[data-p]:hover { color: var(--accent); }
 main { flex: 1; display: flex; min-height: 0; position: relative; }
-#chart { flex: 1; position: relative; min-width: 0; }
+#chart { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#stage { flex: 1; position: relative; min-height: 0; }
 #sun { width: 100%; height: 100%; display: block; }
 #sun path { stroke: var(--bg); stroke-width: 1px; cursor: pointer; transition: opacity .1s; }
 #sun path.file, #sun path.rest { cursor: default; }
@@ -51,9 +52,10 @@ aside { width: 340px; border-left: 1px solid var(--line); background: var(--pane
 .meter i { display: block; height: 100%; background: var(--accent); }
 .meter i.full { background: #e5484d; }
 .disk .f { color: var(--muted); font-size: 12px; }
-#space { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; text-align: right; }
+#cache { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+#space { margin-left: 14px; color: var(--muted); font-size: 12px; white-space: nowrap; text-align: right; }
 #space .meter { width: 140px; margin: 3px 0 0 auto; height: 5px; }
-#sun path.free { fill: none; stroke: var(--muted); stroke-dasharray: 3 3; cursor: default; opacity: .6; }
+#sun path.free { pointer-events: all; fill: none; stroke: var(--muted); stroke-dasharray: 3 3; cursor: default; opacity: .6; }
 #basket { border-top: 1px solid var(--line); padding: 10px 14px; max-height: 45%; overflow-y: auto; }
 #basket .h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: 600; }
 #basket .it { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; color: var(--muted); font-size: 12px; }
@@ -66,3 +68,23 @@ aside { width: 340px; border-left: 1px solid var(--line); background: var(--pane
 #splash[hidden] { display: none; }
 #tip { position: fixed; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; box-shadow: 0 4px 14px #0005; max-width: 360px; z-index: 5; }
 #tip .p { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+
+#start .ver { font-size: 12px; opacity: .7; }
+
+/* motion */
+#sun g.ring { transform-origin: 50% 50%; }   /* the viewBox is centred on 0,0, so this is the middle of the chart */
+.spin { width: 28px; height: 28px; margin: 0 auto 14px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fade { animation: fade .2s ease-out; }
+@keyframes fade { from { opacity: 0; } }
+#list.enter .row { animation: rowin .28s ease-out backwards; animation-delay: calc(var(--i) * 18ms); }
+@keyframes rowin { from { opacity: 0; transform: translateX(10px); } }
+#splash:not([hidden]) { animation: fade .15s ease-out; }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } .fade, #splash:not([hidden]) { animation: none; } }
+
+.tri { display: inline-block; width: 20px; margin-right: 2px; font-size: 17px; line-height: 14px; text-align: center; vertical-align: -1px; color: var(--muted); cursor: pointer; transition: transform .15s ease-out, color .1s; border-radius: 4px; }
+.tri:hover { color: var(--text); background: var(--line); }
+.tri.open { transform: rotate(90deg); }
+.tri.sp { visibility: hidden; cursor: default; }
+
+#crumbs .sep { margin: 0 9px; color: var(--accent); font-size: 15px; }

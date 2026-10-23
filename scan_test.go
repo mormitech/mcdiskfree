@@ -61,3 +61,25 @@ func TestRemoveFromTree(t *testing.T) {
 		t.Fatal("the root itself must not be removable")
 	}
 }
+
+func TestReplaceNode(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "a", "b"), 0o755)
+	os.WriteFile(filepath.Join(dir, "a", "b", "f"), make([]byte, 50000), 0o644)
+	os.WriteFile(filepath.Join(dir, "z"), make([]byte, 60000), 0o644)
+	s := &scanner{ctx: context.Background(), sem: make(chan struct{}, 4)}
+	root := s.walk(dir, "root")
+	bPath := filepath.Join(dir, "a", "b")
+
+	os.WriteFile(filepath.Join(dir, "a", "b", "g"), make([]byte, 200000), 0o644) // b grows past z
+	fresh := s.walk(bPath, "b")
+	if !replaceNode(root, bPath, fresh) {
+		t.Fatal("replace failed")
+	}
+	if got := s.walk(dir, "root"); got.Size != root.Size || got.Items != root.Items {
+		t.Fatalf("merged tree %d/%d, fresh scan %d/%d", root.Size, root.Items, got.Size, got.Items)
+	}
+	if root.Children[0].Name != "a" {
+		t.Fatal("ancestors must be re-sorted after the size change")
+	}
+}

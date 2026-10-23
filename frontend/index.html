@@ -9,13 +9,18 @@
 <header>
     <button id="disks">Disks</button>
     <button id="choose">Choose folder…</button>
-    <button id="rescan" disabled>Rescan</button>
+    <button id="rescan" disabled title="Scan everything again">Rescan</button>
+    <button id="rescanfolder" hidden title="Scan only the folder shown, and keep the rest">Rescan this folder</button>
     <button id="up" title="One folder up" disabled>↑ Up</button>
-    <nav id="crumbs"></nav>
+    <button id="root" title="Back to the top of the scanned disk or folder" disabled>⌂ Root</button>
+    <div id="cache" hidden></div>
     <div id="space" hidden></div>
 </header>
 <main>
-    <section id="chart"><svg id="sun"></svg><div id="center"></div></section>
+    <section id="chart">
+        <nav id="crumbs"></nav>
+        <div id="stage"><svg id="sun"></svg><div id="center"></div></div>
+    </section>
     <aside>
         <div id="list"></div>
         <div id="basket" hidden></div>

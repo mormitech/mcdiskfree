@@ -2,14 +2,34 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+// wails.json is the single source of the version: it ends up in the macOS Info.plist and the Windows file properties,
+// and is read from here for the window title and the UI.
+//
+//go:embed wails.json
+var projectJSON []byte
+
+func version() string {
+	var p struct {
+		Info struct {
+			ProductVersion string `json:"productVersion"`
+		} `json:"info"`
+	}
+	if json.Unmarshal(projectJSON, &p) != nil || p.Info.ProductVersion == "" {
+		return "dev"
+	}
+	return p.Info.ProductVersion
+}
 
 func main() {
 	// Create an instance of the app structure
@@ -17,14 +37,16 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "mcdiskfree",
+		Title:  "mcdiskfree v" + version(),
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		// Without Mac options Wails leaves the green zoom (maximise) button disabled.
+		Mac:       &mac.Options{},
+		OnStartup: app.startup,
 		Bind: []interface{}{
 			app,
 		},

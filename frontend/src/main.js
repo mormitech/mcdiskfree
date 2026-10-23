@@ -1,14 +1,20 @@
 import './style.css';
 import {hierarchy, partition} from 'd3-hierarchy';
 import {arc} from 'd3-shape';
-import {Home, ChooseFolder, Scan, Cancel, View, Reveal, Volumes, FreeSpace, Trash} from '../wailsjs/go/main/App';
+import {Home, ChooseFolder, Scan, Cancel, View, Reveal, Volumes, FreeSpace, Trash, Version, CachedScan, CacheTime, RescanFolder, Platform, SaveSession, LoadSession} from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 
 const $ = (id) => document.getElementById(id);
 const DEPTH = 4;
 
+// What each file manager calls "show this file in its folder"; on Linux the helper opens the containing folder.
+const REVEAL = {darwin: 'Show in Finder', windows: 'Show in Explorer', linux: 'Open containing folder'};
+let revealLabel = 'Show in folder';
+Platform().then((p) => { revealLabel = REVEAL[p] || revealLabel; });
+
 let scanRoot = '';    // folder that was scanned
 let current = null;   // node shown now
+let scanAt = 0;       // unix seconds of the full scan on screen (it may come from the cache)
 let usage = null;     // size and free space of the scanned folder's volume
 let volumes = [];
 let busy = false;
@@ -23,6 +29,14 @@ function bytes(n) {
     return (i === 0 ? n : n.toFixed(n >= 100 ? 0 : 1)) + ' ' + u[i];
 }
 
+function ago(sec) {
+    const s = Math.max(0, Date.now() / 1000 - sec);
+    if (s < 90) return 'just now';
+    if (s < 5400) return Math.round(s / 60) + ' min ago';
+    if (s < 129600) return Math.round(s / 3600) + ' h ago';
+    return Math.round(s / 86400) + ' days ago';
+}
+
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const sepOf = (p) => (p.includes('\\') ? '\\' : '/');
 const isUnder = (p, dir) => p.startsWith(dir.endsWith(sepOf(dir)) ? dir : dir + sepOf(dir));
@@ -32,17 +46,18 @@ const isUnder = (p, dir) => p.startsWith(dir.endsWith(sepOf(dir)) ? dir : dir + 
 async function showStart() {
     if (busy) return;
     volumes = (await Volumes()) || [];
+    const times = await Promise.all(volumes.map((v) => CacheTime(v.path)));
     $('splash').hidden = false;
     $('splash').innerHTML = `<div id="start"><h2>Disks</h2>` + volumes.map((v, i) => {
         const used = v.total - v.free;
         const pct = v.total ? (used / v.total) * 100 : 0;
         return `<div class="disk" data-i="${i}"><div class="t"><b>${esc(v.name)}</b><span>${bytes(used)} used</span></div>` +
             `<div class="p">${esc(v.path)}</div><div class="meter"><i class="${pct > 90 ? 'full' : ''}" style="width:${pct}%"></i></div>` +
-            `<div class="f">${bytes(v.free)} free of ${bytes(v.total)}</div></div>`;
-    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p></div>`;
+            `<div class="f">${bytes(v.free)} free of ${bytes(v.total)}${times[i] ? ' · scanned ' + ago(times[i]) : ''}</div></div>`;
+    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p><p class="ver">mcdiskfree v${await Version()}</p></div>`;
     $('splash').onclick = (e) => {
         const d = e.target.closest('.disk');
-        if (d) scan(volumes[+d.dataset.i].path);
+        if (d) openTarget(volumes[+d.dataset.i].path);
     };
 }
 
@@ -60,14 +75,20 @@ function topHue(d, tops) {
     return (tops.indexOf(t.data) * 137.5 + 210) % 360;
 }
 
-function render(node) {
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// anim: 'open' (rings sweep out one after the other), 'in' (went into a folder), 'out' (went up), or nothing.
+function render(node, anim) {
     current = node;
+    subtrees.clear();
     $('splash').hidden = true;
     drawCrumbs(node.path);
-    drawChart(node);
-    drawList(node);
+    drawChart(node, anim);
+    drawList(node, anim);
     drawBasket();
     drawSpace();
+    drawCacheNote();
+    SaveSession(scanRoot, node.path);   // so the next start can open the same view
 }
 
 // At the top of a whole-disk scan the chart also shows the free space as a dashed slice.
@@ -78,9 +99,9 @@ function withFree(node) {
     return {...node, size: node.size + usage.free, children: [...(node.children || []), free]};
 }
 
-function drawChart(node) {
+function drawChart(node, anim) {
     const shown = withFree(node);
-    const box = $('chart').getBoundingClientRect();
+    const box = $('stage').getBoundingClientRect();
     const R = (Math.min(box.width, box.height) - 16) / 2;
     const hole = R * 0.26;
     const ring = (R - hole) / DEPTH;
@@ -97,11 +118,14 @@ function drawChart(node) {
         .outerRadius((d) => hole + d.depth * ring - 1);
 
     const arcs = root.descendants().filter((d) => d.depth > 0 && d.depth <= DEPTH && d.x1 - d.x0 > 0.003);
-    svg.innerHTML = arcs.map((d, i) => {
+    // One group per ring, so the rings can move one after the other.
+    const rings = Array.from({length: DEPTH}, () => '');
+    arcs.forEach((d, i) => {
         const cls = d.data.free ? 'free' : d.data.isDir ? 'dir' : d.data.path ? 'file' : 'rest';
         const gone = basket.has(d.data.path) ? ' style="opacity:.35"' : '';
-        return `<path data-i="${i}" class="${cls}" d="${gen(d)}" fill="${colour(d, topHue(d, tops))}"${gone}/>`;
-    }).join('');
+        rings[d.depth - 1] += `<path data-i="${i}" class="${cls}" d="${gen(d)}" fill="${colour(d, topHue(d, tops))}"${gone}/>`;
+    });
+    svg.innerHTML = rings.map((r) => `<g class="ring">${r}</g>`).join('');
 
     svg.onmousemove = (e) => {
         const p = e.target.closest('path');
@@ -121,7 +145,7 @@ function drawChart(node) {
     const up = node.path !== scanRoot;
     $('center').innerHTML = `<div class="name">${esc(node.name || node.path)}</div><div class="size">${bytes(node.size)}</div>` +
         (usage && node.path === scanRoot ? `<div class="size">${bytes(usage.free)} free</div>` : '') +
-        (up ? '<div class="up">click ring centre ↑</div>' : '');
+        (up ? '<div class="up">↑ Up</div>' : '');
     const hit = document.getElementById('hit') || document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     hit.id = 'hit';
     hit.setAttribute('r', hole);
@@ -129,6 +153,32 @@ function drawChart(node) {
     hit.style.cursor = up ? 'pointer' : 'default';
     hit.onclick = goUp;
     svg.appendChild(hit);
+
+    if (anim && !reduceMotion) animateChart(svg, anim);
+    if (anim && !reduceMotion) $('center').animate([{opacity: 0}, {opacity: 1}], {duration: 260, easing: 'ease-out'});
+}
+
+// Going into a folder zooms the new rings in from slightly smaller, going up from slightly larger; a fresh open sweeps
+// the rings out from the centre one by one.
+function animateChart(svg, anim) {
+    const from = {open: 0.55, in: 0.8, out: 1.2}[anim];
+    const step = anim === 'open' ? 80 : 35;
+    svg.querySelectorAll('g.ring').forEach((g, i) => {
+        g.animate([{opacity: 0, transform: `scale(${from})`}, {opacity: 1, transform: 'scale(1)'}], {
+            duration: anim === 'open' ? 480 : 320,
+            delay: i * step,
+            easing: 'cubic-bezier(.2,.8,.2,1)',
+            fill: 'backwards',
+        });
+    });
+}
+
+function drawCacheNote() {
+    const el = $('cache');
+    el.hidden = !scanAt;
+    el.textContent = 'scanned ' + ago(scanAt);
+    el.title = new Date(scanAt * 1000).toLocaleString();
+    $('rescanfolder').hidden = !current || current.path === scanRoot;
 }
 
 function drawSpace() {
@@ -141,27 +191,57 @@ function drawSpace() {
 
 // ---- list ---------------------------------------------------------------------------------------------------------
 
-function drawList(node) {
-    const kids = node.children || [];
-    $('list').innerHTML = kids.map((c, i) => {
-        const pct = node.size ? (c.size / node.size) * 100 : 0;
-        const hue = c.path ? (i * 137.5 + 210) % 360 : 215;
+// Folders opened with the triangle in the list; their contents are fetched once per view and kept in `subtrees`.
+const expanded = new Set();
+const subtrees = new Map();   // path -> node with children
+let listRows = [];            // the rows on screen, in order
+
+function flatten(node, depth, hueIndex, out) {
+    (node.children || []).forEach((c, i) => {
+        const hi = depth === 0 ? i : hueIndex;
+        out.push({c, depth, hueIndex: hi, parentSize: node.size});
+        if (c.isDir && c.path && expanded.has(c.path) && subtrees.has(c.path)) flatten(subtrees.get(c.path), depth + 1, hi, out);
+    });
+    return out;
+}
+
+// Fetch what the opened folders contain, then redraw the list.
+function loadExpanded() {
+    for (const path of [...expanded]) {
+        if (subtrees.has(path)) continue;
+        View(path).then((n) => { subtrees.set(path, n); drawList(current); }).catch(() => expanded.delete(path));
+    }
+}
+
+function drawList(node, anim) {
+    $('list').classList.toggle('enter', !!anim && !reduceMotion);
+    listRows = flatten(node, 0, 0, []);
+    $('list').innerHTML = listRows.map(({c, depth, hueIndex, parentSize}, i) => {
+        const pct = parentSize ? (c.size / parentSize) * 100 : 0;
+        const hue = c.path ? (hueIndex * 137.5 + 210) % 360 : 215;
         const inBasket = basket.has(c.path);
-        return `<div class="row${inBasket ? ' in-basket' : ''}" data-i="${i}"><span class="n">${c.isDir ? '▸ ' : ''}${esc(c.name)}</span><span class="s">${bytes(c.size)}</span>` +
-            (c.path ? `<div class="acts"><button data-a="reveal">Reveal</button><button data-a="basket">${inBasket ? 'Remove' : '+ Basket'}</button></div>` : '') +
+        const open = c.isDir && expanded.has(c.path);
+        const tri = c.isDir && c.path ? `<span class="tri${open ? ' open' : ''}" data-a="toggle">▸</span>` : '<span class="tri sp">▸</span>';
+        return `<div class="row${inBasket ? ' in-basket' : ''}" data-i="${i}" style="--i:${Math.min(i, 14)};padding-left:${8 + depth * 18}px"><span class="n">${tri}${esc(c.name)}</span><span class="s">${bytes(c.size)}</span>` +
+            (c.path ? `<div class="acts"><button data-a="reveal">${revealLabel}</button><button data-a="basket">${inBasket ? 'Remove' : '+ Basket'}</button></div>` : '') +
             `<div class="bar"><i style="width:${pct}%;background:hsl(${hue} 62% 55%)"></i></div></div>`;
     }).join('');
     $('list').onclick = (e) => {
         const row = e.target.closest('.row');
         if (!row) return;
-        const c = kids[+row.dataset.i];
+        const c = listRows[+row.dataset.i].c;
         if (!c.path) return;
         const act = e.target.dataset.a;
-        if (act === 'reveal') Reveal(c.path);
+        if (act === 'toggle') {
+            if (expanded.has(c.path)) expanded.delete(c.path); else expanded.add(c.path);
+            loadExpanded();
+            drawList(current);
+        } else if (act === 'reveal') Reveal(c.path);
         else if (act === 'basket') toggleBasket(c);
         else if (c.isDir) open(c.path);
         else Reveal(c.path);
     };
+    loadExpanded();
 }
 
 // ---- basket and delete-to-Trash -------------------------------------------------------------------------------------
@@ -236,14 +316,23 @@ function drawCrumbs(path) {
         acc += (acc.endsWith(sep) ? '' : sep) + r;
         parts.push(`<span data-p="${esc(acc)}">${esc(r)}</span>`);
     }
-    $('crumbs').innerHTML = parts.join(' <span>/</span> ');
-    $('crumbs').scrollLeft = $('crumbs').scrollWidth;   // keep the current folder in view
+    $('crumbs').innerHTML = parts.join('<span class="sep">→</span>');
     $('up').disabled = path === scanRoot;
+    $('root').disabled = path === scanRoot;
 }
 $('crumbs').onclick = (e) => { if (e.target.dataset.p) open(e.target.dataset.p); };
 
 async function open(path) {
-    try { render(await View(path)); } catch (err) { console.error(err); }
+    try {
+        const node = await View(path);
+        let anim;
+        if (!current) anim = 'open';
+        else if (path === current.path) anim = undefined;   // same folder, e.g. refreshed after a delete
+        else if (isUnder(path, current.path)) anim = 'in';
+        else if (isUnder(current.path, path)) anim = 'out';
+        else anim = 'open';
+        render(node, anim);
+    } catch (err) { console.error(err); }
 }
 
 function goUp() {
@@ -264,25 +353,100 @@ function showTip(e, n, total) {
 }
 function hideTip() { $('tip').hidden = true; }
 
-async function scan(path) {
-    if (!path || busy) return;
-    busy = true;
+function showScanning(path) {
+    $('splash').hidden = false;
+    $('splash').onclick = null;
+    $('splash').innerHTML = `<div><div class="spin"></div>Scanning ${esc(path)}…<br><span id="count">0</span> files<br><br><button id="stop">Stop</button></div>`;
+    $('stop').onclick = () => Cancel();
+}
+
+function showLoading(text) {
+    const s = $('splash');
+    s.hidden = false;
+    s.onclick = null;
+    s.innerHTML = `<div class="fade"><div class="spin"></div>${esc(text)}</div>`;
+}
+
+function showError(err) {
+    $('splash').hidden = false;
+    $('splash').innerHTML = `<div>${esc(String(err))}<br><br><button id="back">Back</button></div>`;
+    $('back').onclick = () => { if (current) render(current); else showStart(); };
+}
+
+function resetFor(path) {
     scanRoot = path;
+    expanded.clear();
+    current = null;
+    scanAt = 0;
     basket.clear();
     basketError = '';
     $('sun').innerHTML = '';
-    $('splash').hidden = false;
-    $('splash').onclick = null;
-    $('splash').innerHTML = `<div>Scanning ${esc(path)}…<br><span id="count">0</span> files<br><br><button id="stop">Stop</button></div>`;
-    $('stop').onclick = () => Cancel();
+    $('cache').hidden = true;
+    $('rescanfolder').hidden = true;
+}
+
+// Opens the saved scan of path at once if there is one, otherwise scans it (unless cachedOnly). With focus, it then
+// goes to that folder. Returns whether something was opened.
+async function openTarget(path, {cachedOnly = false, focus = ''} = {}) {
+    if (!path || busy) return false;
+    resetFor(path);
+    volumes = (await Volumes()) || [];
+    // Reading a big saved scan can take a second or two; show a spinner if it does, but not a flash if it is quick.
+    const timer = setTimeout(() => showLoading(`Opening the saved scan of ${path}…`), 150);
+    let cached;
+    try { cached = await CachedScan(path); } finally { clearTimeout(timer); }
+    if (!cached) {
+        if (cachedOnly) return false;
+        await scan(path);
+        return true;
+    }
+    usage = await FreeSpace(path).catch(() => null);
+    scanAt = cached.at;
+    $('rescan').disabled = false;
+    render(cached.node, 'open');
+    if (focus && focus !== path) await open(focus);
+    return true;
+}
+
+// At start, open what was shown last time, if its saved scan is still there.
+async function restore() {
+    const s = await LoadSession();
+    if (s && s.root && (await openTarget(s.root, {cachedOnly: true, focus: s.path}))) return;
+    showStart();
+}
+
+async function scan(path) {
+    if (!path || busy) return;
+    busy = true;
+    const keep = current;
+    resetFor(path);
+    showScanning(path);
     try {
         volumes = (await Volumes()) || [];
         usage = await FreeSpace(path).catch(() => null);
-        render(await Scan(path));
+        const res = await Scan(path);
+        scanAt = res.at;
         $('rescan').disabled = false;
+        render(res.node, 'open');
     } catch (err) {
-        $('splash').innerHTML = `<div>${esc(String(err))}<br><br><button id="back">Back</button></div>`;
-        $('back').onclick = showStart;
+        current = keep;
+        showError(err);
+    } finally {
+        busy = false;
+    }
+}
+
+async function rescanFolder() {
+    if (!current || busy) return;
+    busy = true;
+    const path = current.path;
+    showScanning(path);
+    try {
+        const res = await RescanFolder(path);
+        usage = await FreeSpace(scanRoot).catch(() => usage);
+        render(res.node, 'open');
+    } catch (err) {
+        showError(err);
     } finally {
         busy = false;
     }
@@ -290,8 +454,10 @@ async function scan(path) {
 
 EventsOn('progress', (n) => { const c = $('count'); if (c) c.textContent = n.toLocaleString(); });
 $('disks').onclick = showStart;
-$('choose').onclick = async () => { const p = await ChooseFolder(); if (p) scan(p); };
+$('choose').onclick = async () => { const p = await ChooseFolder(); if (p) openTarget(p); };
 $('up').onclick = goUp;
+$('root').onclick = () => { if (current && current.path !== scanRoot) open(scanRoot); };
 $('rescan').onclick = () => scan(scanRoot);
+$('rescanfolder').onclick = rescanFolder;
 addEventListener('resize', () => { if (current) drawChart(current); });
-showStart();
+restore();
