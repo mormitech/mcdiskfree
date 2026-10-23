@@ -19,9 +19,9 @@
 > **A disk analyzer that is free, forever, on every platform, and installed the way you install everything else.**
 
 ```
-brew install --cask mormitech/tap/mcdiskfree      # macOS            (planned)
-brew install mormitech/tap/mcdiskfree             # Linux            (planned)
-winget install mormitech.mcdiskfree               # Windows          (planned)
+brew install --cask mormitech/tap/mcdiskfree      # macOS, Apple silicon     (available now)
+winget install mormitech.mcdiskfree               # Windows                  (submitted to winget, coming)
+brew install mormitech/tap/mcdiskfree             # Linux                    (planned)
 ```
 
 Good disk analyzers exist, but the best ones are paid and tied to one operating system. mcdiskfree is an attempt to
@@ -45,8 +45,22 @@ level, every slice is sized by the space it takes on disk.
 
 ## Install
 
-mcdiskfree is an **early preview** (version 0.5), so the package-manager releases are not published yet; that is the
-next milestone (see the roadmap). Until then, build it from source, it takes a minute:
+mcdiskfree is an **early preview** (version 0.5). Pick your system:
+
+**macOS** (Apple silicon), with [Homebrew](https://brew.sh):
+
+```
+brew install --cask mormitech/tap/mcdiskfree
+```
+
+**Windows**: `winget install mormitech.mcdiskfree` is coming as soon as Microsoft approves the package. Until then,
+download `mcdiskfree-setup-<version>-windows-x64.exe` from the [latest release](https://github.com/mormitech/mcdiskfree/releases/latest)
+and run it (no admin rights needed; `/VERYSILENT` installs without any window).
+
+**Linux**: download `mcdiskfree-<version>-linux-x64.tar.gz` from the latest release, extract it and run `mcdiskfree`.
+You need GTK 3 and WebKitGTK 4.1 installed (`libgtk-3-0` and `libwebkit2gtk-4.1-0` on Debian and Ubuntu).
+
+**From source**, it takes a minute:
 
 ```
 git clone https://github.com/mormitech/mcdiskfree
@@ -62,13 +76,14 @@ build with `-tags webkit2_41`.
 
 | | macOS | Windows | Linux |
 |---|---|---|---|
-| Builds in CI | ✅ | ✅ | ✅ |
+| Builds and tests in CI | ✅ | ✅ (installer installed, started and uninstalled on a runner) | ✅ |
 | Used and tried by hand | ✅ (Apple silicon) | ⏳ not yet | ⏳ not yet |
+| Install | `brew install --cask mormitech/tap/mcdiskfree` ✅ | installer on the release ✅, winget submitted ⏳ | tar.gz on the release ✅, Homebrew formula ⏳ |
 | Move to Trash | Finder (so "Put Back" works) | Recycle Bin (untested) | `gio trash` or `trash-put` (untested) |
-| Package manager | Homebrew (planned) | winget (planned) | Homebrew (planned) |
 
-Releases are not code-signed yet, so the OS will warn on the first launch (macOS: **Open Anyway** in System Settings →
-Privacy & Security; Windows: **More info → Run anyway**).
+Releases are not code-signed yet. The Homebrew cask clears the macOS download flag, so brew installs open without a
+warning; if you download the zip yourself, use **Open Anyway** in System Settings → Privacy & Security. On Windows,
+SmartScreen shows **More info → Run anyway**. Free signing for Windows is planned (see the roadmap).
 
 ## Privacy
 
@@ -91,7 +106,8 @@ compressed copy of your last scans (file and folder names and sizes) in your use
 
 Next, in this order:
 
-1. **Ship it.** Signed releases, Homebrew tap, winget package, first real tests on Windows and Linux. *(This is the goal.)*
+1. **Finish shipping.** ✅ Homebrew cask and release builds. Next: the winget package (submitted), a Linux formula, signing
+   (free open-source signing for Windows; macOS notarization costs money), first real tests on Windows and Linux. *(This is the goal.)*
 2. **Honest numbers.** Detect folders it may not read (macOS Full Disk Access) and say so; show purgeable space and
    snapshots so the chart adds up to the disk; handle APFS clones, hard links and iCloud placeholders.
 3. **Live scan.** Watch the chart grow while it scans.
