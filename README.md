@@ -19,9 +19,9 @@
 > **A disk analyzer that is free, forever, on every platform, and installed the way you install everything else.**
 
 ```
-brew install mormitech/tap/mcdiskfree      # macOS, Apple silicon     (available now)
+brew install --cask mormitech/tap/mcdiskfree   # macOS, Apple silicon     (available now)
 winget install mormitech.mcdiskfree               # Windows                  (coming)
-brew install mormitech/tap/mcdiskfree             # Linux                    (planned)
+brew install mormitech/tap/mcdiskfree          # Linux x64                (available now)
 ```
 
 Good disk analyzers exist, but the best ones are paid and tied to one operating system. mcdiskfree is an attempt to
@@ -50,14 +50,14 @@ mcdiskfree is an **early preview** (version 0.5). Pick your system:
 **macOS** (Apple silicon), with [Homebrew](https://brew.sh):
 
 ```
-brew install mormitech/tap/mcdiskfree
+brew install --cask mormitech/tap/mcdiskfree
 ```
 
 **Windows**: `winget install mormitech.mcdiskfree` is coming; the package still has to be submitted to and approved by Microsoft. Until then,
 download `mcdiskfree-setup-<version>-windows-x64.exe` from the [latest release](https://github.com/mormitech/mcdiskfree/releases/latest)
 and run it (no admin rights needed; `/VERYSILENT` installs without any window).
 
-**Linux**: download `mcdiskfree-<version>-linux-x64.tar.gz` from the latest release, extract it and run `mcdiskfree`.
+**Linux** (x64), with [Homebrew](https://brew.sh): `brew install mormitech/tap/mcdiskfree`. You still need GTK 3 and WebKitGTK 4.1 from your distribution (see below). Or download `mcdiskfree-<version>-linux-x64.tar.gz` from the latest release, extract it and run `mcdiskfree`.
 You need GTK 3 and WebKitGTK 4.1 installed (`libgtk-3-0` and `libwebkit2gtk-4.1-0` on Debian and Ubuntu).
 
 **From source**, it takes a minute:
@@ -130,9 +130,16 @@ go test ./...
 | `scan.go` | parallel scanner, tree helpers |
 | `cache.go`, `session.go` | saved scans and the last session |
 | `app.go` | the methods the UI calls |
+| `mock.go`, `mock/` | demo mode: fictional disks (`scripts/make-mock.mjs` regenerates them) |
 | `internal/disk` | volumes, free space, Trash, per OS (cross-compiles on its own) |
 | `frontend/` | the UI |
 | `.github/workflows/build.yml` | builds and tests on macOS, Windows and Linux |
+
+**Demo mode** shows made-up disks instead of yours, handy for screenshots. Nothing real is scanned, cached or deleted:
+
+```
+mcdiskfree --mock windows      # or linux, macos; --mock=windows and --demo work too
+```
 
 The version lives in one place, `wails.json`.
 

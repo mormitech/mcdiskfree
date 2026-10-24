@@ -5,7 +5,7 @@ import "testing"
 func TestSessionRoundTrip(t *testing.T) {
 	tmp := t.TempDir()
 	cacheDir = func() string { return tmp }
-	a := NewApp()
+	a := NewApp(nil)
 
 	if s := a.LoadSession(); s.Root != "" {
 		t.Fatalf("fresh cache dir must give an empty session, got %+v", s)

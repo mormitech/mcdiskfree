@@ -21,20 +21,27 @@ type App struct {
 	root   *Node
 	scanAt int64 // unix seconds of the full scan the tree comes from
 	cancel context.CancelFunc
+	mock   *mockFS // set in demo mode: fictional disks instead of the real ones
 }
 
-func NewApp() *App { return &App{} }
+func NewApp(mock *mockFS) *App { return &App{mock: mock} }
 
 func (a *App) startup(ctx context.Context) { a.ctx = ctx }
 
 // Home is the folder the app offers to scan first.
 func (a *App) Home() string {
+	if a.mock != nil {
+		return a.mock.home
+	}
 	h, _ := os.UserHomeDir()
 	return h
 }
 
 // ChooseFolder opens the OS folder picker. It returns "" when the user cancels.
 func (a *App) ChooseFolder() (string, error) {
+	if a.mock != nil {
+		return "", nil
+	}
 	return wr.OpenDirectoryDialog(a.ctx, wr.OpenDialogOptions{Title: "Folder to scan", DefaultDirectory: a.Home()})
 }
 
@@ -82,7 +89,7 @@ func (a *App) walkWithProgress(path string) (*Node, error) {
 
 // persistLocked saves the current tree to the cache in the background. The caller holds a.mu.
 func (a *App) persistLocked() {
-	if a.root == nil {
+	if a.root == nil || a.mock != nil {
 		return
 	}
 	root, at, tree := a.root.Path, a.scanAt, compact(a.root)
@@ -95,6 +102,9 @@ func (a *App) persistLocked() {
 
 // Scan walks path in full, replaces the cached result and returns the top of the tree.
 func (a *App) Scan(path string) (*ScanResult, error) {
+	if a.mock != nil {
+		return a.mockOpen(path, false)
+	}
 	root, err := a.walkWithProgress(path)
 	if err != nil {
 		return nil, err
@@ -108,6 +118,10 @@ func (a *App) Scan(path string) (*ScanResult, error) {
 
 // CachedScan loads the last saved scan of path. It returns nil when there is none.
 func (a *App) CachedScan(path string) *ScanResult {
+	if a.mock != nil {
+		res, _ := a.mockOpen(path, true)
+		return res
+	}
 	s, err := loadSnapshot(path)
 	if err != nil {
 		return nil
@@ -119,10 +133,21 @@ func (a *App) CachedScan(path string) *ScanResult {
 }
 
 // CacheTime is when path was last scanned in full (unix seconds), or 0 when it never was.
-func (a *App) CacheTime(path string) int64 { return cacheTime(path) }
+func (a *App) CacheTime(path string) int64 {
+	if a.mock != nil {
+		if a.mock.roots[path] == nil {
+			return 0
+		}
+		return a.mock.savedAt
+	}
+	return cacheTime(path)
+}
 
 // RescanFolder walks only path, merges the result into the scanned tree (sizes above it are corrected) and saves it.
 func (a *App) RescanFolder(path string) (*ScanResult, error) {
+	if a.mock != nil {
+		return a.mockRescan(path)
+	}
 	a.mu.Lock()
 	n := (*Node)(nil)
 	if a.root != nil {
@@ -165,7 +190,7 @@ func (a *App) View(path string) (*Node, error) {
 	if a.root == nil {
 		return nil, errors.New("nothing scanned yet")
 	}
-	n := find(a.root, path)
+	n := a.lookupLocked(path)
 	if n == nil {
 		return nil, errors.New("not in the scanned tree: " + path)
 	}
@@ -174,6 +199,9 @@ func (a *App) View(path string) (*Node, error) {
 
 // Reveal shows path in the OS file manager.
 func (a *App) Reveal(path string) error {
+	if a.mock != nil {
+		return nil
+	}
 	switch runtime.GOOS {
 	case "darwin":
 		return exec.Command("open", "-R", path).Start()
@@ -185,10 +213,20 @@ func (a *App) Reveal(path string) error {
 }
 
 // Volumes lists the disks that can be scanned as a whole, with their free space.
-func (a *App) Volumes() []disk.Volume { return disk.Volumes() }
+func (a *App) Volumes() []disk.Volume {
+	if a.mock != nil {
+		return a.mock.volumes
+	}
+	return disk.Volumes()
+}
 
 // FreeSpace reports the size and free space of the volume that holds path.
-func (a *App) FreeSpace(path string) (disk.Usage, error) { return disk.UsageOf(path) }
+func (a *App) FreeSpace(path string) (disk.Usage, error) {
+	if a.mock != nil {
+		return a.mock.usage(path)
+	}
+	return disk.UsageOf(path)
+}
 
 // TrashResult says which paths were moved to the Trash and why the others were not.
 type TrashResult struct {
@@ -199,6 +237,9 @@ type TrashResult struct {
 // Trash moves paths from the scanned tree to the Trash / Recycle Bin (never a permanent delete) and takes them out of
 // the tree. Only paths inside the scanned folder are accepted, never the scanned folder itself.
 func (a *App) Trash(paths []string) TrashResult {
+	if a.mock != nil {
+		return a.mockTrash(paths)
+	}
 	var res TrashResult
 	for _, p := range paths {
 		a.mu.Lock()
@@ -229,4 +270,9 @@ func (a *App) Trash(paths []string) TrashResult {
 func (a *App) Version() string { return version() }
 
 // Platform is the operating system the app runs on ("darwin", "windows" or "linux"), so the UI can use its own words.
-func (a *App) Platform() string { return runtime.GOOS }
+func (a *App) Platform() string {
+	if a.mock != nil {
+		return a.mock.goos
+	}
+	return runtime.GOOS
+}

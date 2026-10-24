@@ -22,6 +22,9 @@ func sessionFile() string {
 
 // SaveSession remembers what is shown, so the next start can open it again.
 func (a *App) SaveSession(root, path string) {
+	if a.mock != nil {
+		return // demo mode leaves the real session alone
+	}
 	file := sessionFile()
 	if file == "" || root == "" {
 		return
@@ -38,6 +41,9 @@ func (a *App) SaveSession(root, path string) {
 
 // LoadSession returns the last session, or an empty one when there is none or its disk or folder is gone.
 func (a *App) LoadSession() Session {
+	if a.mock != nil {
+		return Session{}
+	}
 	file := sessionFile()
 	if file == "" {
 		return Session{}
