@@ -344,7 +344,9 @@ function goUp() {
     if (!current || current.path === scanRoot) return;
     const sep = sepOf(current.path);
     const cut = current.path.lastIndexOf(sep);
-    open(cut <= 0 ? sep : current.path.slice(0, cut));
+    const up = cut <= 0 ? sep : current.path.slice(0, cut);
+    // Cutting D:\GAMES leaves "D:", which Windows reads as a relative path; the scan root "D:\" is what the tree knows.
+    open(up.length < scanRoot.length ? scanRoot : up);
 }
 
 function showTip(e, n, total) {
