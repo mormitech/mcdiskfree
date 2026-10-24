@@ -46,6 +46,10 @@ const isUnder = (p, dir) => p.startsWith(dir.endsWith(sepOf(dir)) ? dir : dir + 
 
 async function showStart() {
     if (busy) return;
+    // the age of the scan and the free space belong to the disk that was on screen, not to this list
+    $('cache').hidden = true;
+    $('space').hidden = true;
+    $('rescanfolder').hidden = true;
     volumes = (await Volumes()) || [];
     const times = await Promise.all(volumes.map((v) => CacheTime(v.path)));
     $('splash').hidden = false;
