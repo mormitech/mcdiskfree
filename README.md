@@ -146,6 +146,29 @@ The version lives in one place, `wails.json`.
 
 Changes to `main` go through a pull request. A release is cut by pushing a `v*` tag that matches the version in `wails.json`.
 
+## Disclaimer
+
+mcDiskFree is free software, provided by Mormitech **"as is" and "as available"**, without warranty of any kind, express
+or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, accuracy and
+non-infringement.
+
+By installing or using mcDiskFree you acknowledge and agree that:
+
+- **Your data is your responsibility.** The app can move files and folders to the Trash or Recycle Bin. You decide what
+  is selected and removed. Keep current backups of everything you care about, and review the basket before you confirm.
+- **Results may be incomplete or inaccurate.** Sizes, free space and scan results can differ from what your operating
+  system reports (for example because of permissions, purgeable space, snapshots, clones, hard links or files that
+  change during a scan). Do not rely on them as the only basis for decisions.
+- **No liability.** To the maximum extent permitted by applicable law, Mormitech and the contributors to this project
+  exclude all liability for any loss or damage of any kind arising out of or in connection with the software or its use,
+  including data loss, corruption, system instability, downtime, loss of profit or any direct, indirect, incidental,
+  special, consequential or other side effect, even if advised of the possibility of such damage.
+- **Use at your own risk.** Nothing here excludes or limits liability that cannot be excluded or limited by law.
+
+This notice supplements the [MIT license](LICENSE), whose warranty disclaimer and limitation of liability apply in full.
+
 ## License
 
-[MIT](LICENSE): use it, change it, ship it, forever.
+[MIT](LICENSE): use it, copy it, change it, distribute it, even sell it, for personal, commercial and corporate use,
+free of charge. The only condition is that the copyright and license notice stay with the software. In return, the
+software comes without any warranty and the authors are not liable for anything (see the Disclaimer above).

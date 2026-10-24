@@ -11,7 +11,9 @@ const DEPTH = 4;
 // What each file manager calls "show this file in its folder"; on Linux the helper opens the containing folder.
 const REVEAL = {darwin: 'Show in Finder', windows: 'Show in Explorer', linux: 'Open containing folder'};
 let revealLabel = 'Show in folder';
-Platform().then((p) => { revealLabel = REVEAL[p] || revealLabel; });
+let onMac = false;
+Platform().then((p) => { revealLabel = REVEAL[p] || revealLabel; onMac = p === 'darwin'; });
+const FULL_DISK_ACCESS = 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles';
 
 let scanRoot = '';    // folder that was scanned
 let current = null;   // node shown now
@@ -101,12 +103,20 @@ function render(node, anim) {
     SaveSession(scanRoot, node.path);   // so the next start can open the same view
 }
 
-// At the top of a whole-disk scan the chart also shows the free space as a dashed slice.
+// At the top of a whole-disk scan the chart also shows the free space as a dashed slice, and the used space the scan
+// did not see (other volumes of the container, folders it may not read, purgeable space) as a faded one, so that the
+// whole circle is the disk and every share is a share of the disk.
 function withFree(node) {
     const wholeDisk = node.path === scanRoot && volumes.some((v) => v.path === scanRoot);
     if (!wholeDisk || !usage || !usage.free) return node;
-    const free = {name: 'Free space', path: '', isDir: false, free: true, size: usage.free, items: 0};
-    return {...node, size: node.size + usage.free, children: [...(node.children || []), free]};
+    const extra = [];
+    const unseen = usage.total - usage.free - node.size;
+    if (unseen > 0) {
+        extra.push({name: 'Not scanned', path: '', isDir: false, unscanned: true, size: unseen, items: 0,
+            note: 'Why: this space is used, but outside the scanned volume. It is other volumes of the same disk (system, VM, recovery), folders macOS did not let the scan read (Full Disk Access), and purgeable space or snapshots.'});
+    }
+    extra.push({name: 'Free space', path: '', isDir: false, free: true, size: usage.free, items: 0});
+    return {...node, size: node.size + extra.reduce((n, e) => n + e.size, 0), children: [...(node.children || []), ...extra]};
 }
 
 function drawChart(node, anim) {
@@ -131,7 +141,7 @@ function drawChart(node, anim) {
     // One group per ring, so the rings can move one after the other.
     const rings = Array.from({length: DEPTH}, () => '');
     arcs.forEach((d, i) => {
-        const cls = d.data.free ? 'free' : d.data.isDir ? 'dir' : d.data.path ? 'file' : 'rest';
+        const cls = d.data.free ? 'free' : d.data.unscanned ? 'unscanned' : d.data.isDir ? 'dir' : d.data.path ? 'file' : 'rest';
         const gone = basket.has(d.data.path) ? ' style="opacity:.35"' : '';
         rings[d.depth - 1] += `<path data-i="${i}" class="${cls}" d="${gen(d)}" fill="${colour(d, topHue(d, tops))}"${gone}/>`;
     });
@@ -147,7 +157,8 @@ function drawChart(node, anim) {
         const p = e.target.closest('path');
         if (!p) return;
         const d = arcs[+p.dataset.i].data;
-        if (e.shiftKey && d.path) toggleBasket(d);
+        if (d.unscanned) { if (onMac) BrowserOpenURL(FULL_DISK_ACCESS); }
+        else if (e.shiftKey && d.path) toggleBasket(d);
         else if (d.isDir) open(d.path);
     };
     svg.oncontextmenu = (e) => { e.preventDefault(); goUp(); };
@@ -358,7 +369,7 @@ function showTip(e, n, total) {
     const t = $('tip');
     t.hidden = false;
     t.innerHTML = `<div><b>${esc(n.name)}</b></div><div>${bytes(n.size)} · ${total ? ((n.size / total) * 100).toFixed(1) : 0}%` +
-        (n.isDir ? ` · ${n.items.toLocaleString()} files` : '') + `</div>` + (n.path ? `<div class="p">${esc(n.path)}</div>` : '') +
+        (n.isDir ? ` · ${n.items.toLocaleString()} files` : '') + `</div>` + (n.path ? `<div class="p">${esc(n.path)}</div>` : '') + (n.note ? `<div class="p">${esc(n.note)}</div>` : '') + (n.unscanned && onMac ? '<div class="p">click: open Full Disk Access settings</div>' : '') +
         (n.path ? '<div class="p">shift-click: add to basket</div>' : '');
     t.style.left = Math.min(e.clientX + 14, innerWidth - 380) + 'px';
     t.style.top = Math.min(e.clientY + 14, innerHeight - 110) + 'px';
@@ -492,8 +503,13 @@ async function showAbout() {
         <h1>mcDiskFree</h1>
         <p class="muted">Version ${esc(await Version())}</p>
         <p>See what is eating your disk: a disk space analyzer with an interactive sunburst chart, for macOS, Windows and Linux.</p>
-        <p class="muted">Free and open source, MIT license. No accounts, no ads, no telemetry.</p>
-        <p class="links"><a href="${REPO}">Website and source code</a><a href="${REPO}/issues">Report a problem</a><a href="${REPO}/blob/main/LICENSE">License</a><a class="coffee" href="https://mormitech.com/support-us/">${COFFEE}Buy me a coffee</a></p>`;
+        <p class="muted">Free and open source under the MIT license: use, modify, distribute and sell it, privately or commercially. No accounts, no ads, no telemetry.</p>
+        <p class="links"><a href="${REPO}">Website and source code</a><a href="${REPO}/issues">Report a problem</a><a href="${REPO}/blob/main/LICENSE">License</a><a class="coffee" href="https://mormitech.com/support-us/">${COFFEE}Buy me a coffee</a></p>
+        <details class="disclaimer"><summary>Disclaimer</summary>
+        <p>mcDiskFree is free software provided by Mormitech "as is" and "as available", without warranty of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, accuracy and non-infringement.</p>
+        <p>You use it at your own risk. You are responsible for your data and for keeping current backups. Review everything in the basket before you move it to the Trash. Scan results and sizes may be incomplete or differ from what your system reports.</p>
+        <p>To the maximum extent permitted by applicable law, Mormitech and the contributors exclude all liability for any loss or damage arising out of or in connection with the software or its use, including data loss, corruption, system instability or any other direct, indirect, incidental or consequential side effect, even if advised of the possibility of such damage. Nothing here excludes liability that cannot be excluded by law.</p>
+        <p>This notice supplements the MIT license, whose terms apply in full.</p></details>`;
 }
 
 document.addEventListener('click', (ev) => {
