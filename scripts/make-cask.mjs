@@ -61,7 +61,7 @@ process.stdout.write(`cask "mcdiskfree" do
     depends_on macos: :monterey
 
     app "mcdiskfree.app"
-    # also a command, so `mcdiskfree` (and `mcdiskfree --mock macos`) works in a terminal
+    # also a command, so mcdiskfree (and mcdiskfree --mock macos) works in a terminal
     binary "#{appdir}/mcdiskfree.app/Contents/MacOS/mcdiskfree"
 
     # The app is not notarized yet, so Gatekeeper would block its first launch; clear the quarantine flag it got
