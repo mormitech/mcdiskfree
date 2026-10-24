@@ -12,6 +12,10 @@
   <img alt="status" src="https://img.shields.io/badge/status-early%20preview-orange.svg">
 </p>
 
+<p align="center">
+  <a href="https://mormitech.com/mctools/mcdiskfree/"><img alt="mcDiskFree showing a whole disk as an interactive sunburst chart" src="https://mormitech.com/mctools/mcdiskfree/assets/mcdiskfree_02-whole-disk.png" width="820"></a>
+</p>
+
 ---
 
 ## Our goal
