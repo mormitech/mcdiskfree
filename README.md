@@ -136,6 +136,8 @@ go test ./...
 
 The version lives in one place, `wails.json`.
 
+Changes to `main` go through a pull request. A release is cut by pushing a `v*` tag that matches the version in `wails.json`.
+
 ## License
 
 [MIT](LICENSE): use it, change it, ship it, forever.
