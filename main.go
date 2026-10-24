@@ -61,7 +61,7 @@ func main() {
 		}
 	}
 	app := NewApp(mock)
-	title, width, height := "mcDiskFree v"+version(), 1024, 768
+	title, width, height := "mcDiskFree v"+version(), 1280, 800
 	var menuBar *menu.Menu
 	if about {
 		app.mode, title, width, height = "about", "About mcDiskFree", 440, 520
