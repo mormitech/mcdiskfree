@@ -59,7 +59,7 @@ async function showStart() {
         return `<div class="disk" data-i="${i}"><div class="t"><b>${esc(v.name)}</b><span>${bytes(used)} used</span></div>` +
             `<div class="p">${esc(v.path)}</div><div class="meter"><i class="${pct > 90 ? 'full' : ''}" style="width:${pct}%"></i></div>` +
             `<div class="f">${bytes(v.free)} free of ${bytes(v.total)}${times[i] ? ' · scanned ' + ago(times[i]) : ''}</div></div>`;
-    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p><p class="ver">mcDiskFree v${await Version()}</p></div>`;
+    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p></div>`;
     $('splash').onclick = (e) => {
         const d = e.target.closest('.disk');
         if (d) openTarget(volumes[+d.dataset.i].path);
