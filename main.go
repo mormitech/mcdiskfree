@@ -50,6 +50,9 @@ func startFlags(args []string) (platform string, about bool) {
 	return
 }
 
+// The main window's preferred size; startup shrinks it on screens that are too small.
+const windowW, windowH = 1280, 800
+
 func main() {
 	var mock *mockFS
 	platform, about := startFlags(os.Args[1:])
@@ -61,7 +64,7 @@ func main() {
 		}
 	}
 	app := NewApp(mock)
-	title, width, height := "mcDiskFree v"+version(), 1280, 800
+	title, width, height := "mcDiskFree v"+version(), windowW, windowH
 	var menuBar *menu.Menu
 	if about {
 		app.mode, title, width, height = "about", "About mcDiskFree", 440, 520
