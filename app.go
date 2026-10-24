@@ -28,7 +28,12 @@ type App struct {
 
 func NewApp(mock *mockFS) *App { return &App{mock: mock} }
 
-func (a *App) startup(ctx context.Context) { a.ctx = ctx }
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
+	if a.mode == "" {
+		fitWindow(ctx, windowW, windowH)
+	}
+}
 
 // Home is the folder the app offers to scan first.
 func (a *App) Home() string {
