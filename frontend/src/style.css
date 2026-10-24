@@ -107,3 +107,22 @@ body.about-mode { display: block; overflow: auto; } body.about-mode header, body
 header h1 { display: flex; align-items: center; gap: 9px; margin: 0 12px 0 0; font-size: 17px; font-weight: 650; white-space: nowrap; }
 .logo-sm { height: 20px; width: auto; }
 @media (prefers-color-scheme: dark) { .logo-sm { filter: invert(1); } }
+
+/* icon buttons in the header */
+header button.icon { width: 34px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+header button.icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+header button.icon[hidden] { display: none; }
+/* a tooltip of our own: the system's title tooltips do not show in every webview */
+header button.icon { position: relative; }
+header button.icon:hover::after { content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; white-space: nowrap;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; font-size: 12px; font-weight: 400;
+    box-shadow: 0 4px 14px #0005; pointer-events: none; }
+header button.icon:disabled:hover::after { opacity: .7; }
+header { position: relative; z-index: 20; } /* so the tooltips are drawn over the chart */
+/* subtle colour for the header icons */
+:root { --i-disks: #8fb4e8; --i-choose: #e3b05b; --i-rescan: #5fcf8e; --i-rescanfolder: #4fc9c0; --i-up: #7aa8ff; --i-root: #b69cf0; }
+@media (prefers-color-scheme: light) {
+    :root { --i-disks: #3b6fb6; --i-choose: #b9770e; --i-rescan: #2a9a5c; --i-rescanfolder: #1f9c94; --i-up: #2f6fd6; --i-root: #7c5cc4; }
+}
+#disks svg { color: var(--i-disks); } #choose svg { color: var(--i-choose); } #rescan svg { color: var(--i-rescan); }
+#rescanfolder svg { color: var(--i-rescanfolder); } #up svg { color: var(--i-up); } #root svg { color: var(--i-root); }
