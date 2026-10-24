@@ -46,6 +46,10 @@ const isUnder = (p, dir) => p.startsWith(dir.endsWith(sepOf(dir)) ? dir : dir + 
 
 async function showStart() {
     if (busy) return;
+    // only "All disks" (already selected) and "Choose folder" make sense here; the rest belong to a loaded disk
+    document.body.classList.add('start');
+    $('disks').disabled = true;
+    SaveSession('', '');   // so the next start comes back to this list
     // the age of the scan and the free space belong to the disk that was on screen, not to this list
     $('cache').hidden = true;
     $('space').hidden = true;
@@ -84,6 +88,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // anim: 'open' (rings sweep out one after the other), 'in' (went into a folder), 'out' (went up), or nothing.
 function render(node, anim) {
+    leaveStart();
     current = node;
     subtrees.clear();
     $('splash').hidden = true;
@@ -380,7 +385,13 @@ function showError(err) {
     $('back').onclick = () => { if (current) render(current); else showStart(); };
 }
 
+function leaveStart() {
+    document.body.classList.remove('start');
+    $('disks').disabled = false;
+}
+
 function resetFor(path) {
+    leaveStart();
     scanRoot = path;
     expanded.clear();
     current = null;

@@ -20,13 +20,13 @@ func sessionFile() string {
 	return filepath.Join(dir, "session.json")
 }
 
-// SaveSession remembers what is shown, so the next start can open it again.
+// SaveSession remembers what is shown, so the next start can open it again. An empty root means the list of disks.
 func (a *App) SaveSession(root, path string) {
 	if a.mock != nil {
 		return // demo mode leaves the real session alone
 	}
 	file := sessionFile()
-	if file == "" || root == "" {
+	if file == "" {
 		return
 	}
 	data, err := json.Marshal(Session{Root: root, Path: path})

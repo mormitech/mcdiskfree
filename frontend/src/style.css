@@ -112,6 +112,7 @@ header h1 { display: flex; align-items: center; gap: 9px; margin: 0 12px 0 0; fo
 header button.icon { width: 34px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 header button.icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 header button.icon[hidden] { display: none; }
+body.start header #rescan, body.start header #rescanfolder, body.start header #up, body.start header #root { display: none; }
 /* a tooltip of our own: the system's title tooltips do not show in every webview */
 header button.icon { position: relative; }
 header button.icon:hover::after { content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; white-space: nowrap;
