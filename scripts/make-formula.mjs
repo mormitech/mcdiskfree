@@ -18,7 +18,7 @@ if (!res.ok) throw new Error(`${url}: HTTP ${res.status} (is the release publish
 const sha = createHash('sha256').update(Buffer.from(await res.arrayBuffer())).digest('hex');
 
 process.stdout.write(`class Mcdiskfree < Formula
-  desc "Free disk space analyzer with an interactive sunburst chart"
+  desc "Disk space and disk usage analyzer with an interactive sunburst chart"
   homepage "https://github.com/${repo}"
   url "https://github.com/${repo}/releases/download/v${version}/mcdiskfree-${version}-linux-x64.tar.gz"
   sha256 "${sha}"

@@ -42,7 +42,7 @@ process.stdout.write(`cask "mcdiskfree" do
 
   url "${urlLine}"
   name "mcDiskFree"
-  desc "Free disk space analyzer with an interactive sunburst chart"
+  desc "Disk space and disk usage analyzer with an interactive sunburst chart"
   homepage "https://github.com/${repo}"
 
   livecheck do
