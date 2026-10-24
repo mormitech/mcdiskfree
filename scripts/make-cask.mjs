@@ -14,7 +14,7 @@ const root = resolve(import.meta.dirname, '..');
 const args = process.argv.slice(2);
 const localAt = args.indexOf('--local');
 const localDir = localAt >= 0 ? resolve(args[localAt + 1]) : null;
-const version = args.find((a, i) => !a.startsWith('--') && i !== localAt + 1)
+const version = args.find((a, i) => !a.startsWith('--') && (localAt < 0 || i !== localAt + 1))
   ?? JSON.parse(readFileSync(join(root, 'wails.json'), 'utf8')).info.productVersion;
 
 const repo = 'mormitech/mcdiskfree';
