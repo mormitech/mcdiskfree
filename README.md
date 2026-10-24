@@ -20,7 +20,8 @@
 
 ```
 brew install mormitech/tap/mcdiskfree          # macOS, Apple silicon     (available now)
-winget install mormitech.mcdiskfree               # Windows                  (coming)
+scoop bucket add mormitech https://github.com/mormitech/scoop-bucket && scoop install mcdiskfree   # Windows (available now)
+winget install mormitech.mcdiskfree               # Windows                  (coming: submitted to Microsoft)
 brew install mormitech/tap/mcdiskfree          # Linux x64                (available now)
 ```
 
@@ -53,7 +54,7 @@ mcDiskFree is an **early preview** (version 0.6). Pick your system:
 brew install mormitech/tap/mcdiskfree
 ```
 
-**Windows**: `winget install mormitech.mcdiskfree` is coming; the package still has to be submitted to and approved by Microsoft. Until then,
+**Windows**: with [Scoop](https://scoop.sh): `scoop bucket add mormitech https://github.com/mormitech/scoop-bucket` then `scoop install mcdiskfree`. `winget install mormitech.mcdiskfree` is coming; the package is submitted and waits for Microsoft's approval. Or
 download `mcdiskfree-setup-<version>-windows-x64.exe` from the [latest release](https://github.com/mormitech/mcdiskfree/releases/latest)
 and run it (no admin rights needed; `/VERYSILENT` installs without any window).
 
@@ -78,7 +79,7 @@ build with `-tags webkit2_41`.
 |---|---|---|---|
 | Builds and tests in CI | ✅ | ✅ (installer installed, started and uninstalled on a runner) | ✅ |
 | Used and tried by hand | ✅ (Apple silicon) | ⏳ not yet | ⏳ not yet |
-| Install | `brew install mormitech/tap/mcdiskfree` ✅ | installer on the release ✅, winget ⏳ | tar.gz on the release ✅, `brew install mormitech/tap/mcdiskfree` ✅ |
+| Install | `brew install mormitech/tap/mcdiskfree` ✅ | installer on the release ✅, `scoop install mcdiskfree` ✅, winget ⏳ (submitted) | tar.gz on the release ✅, `brew install mormitech/tap/mcdiskfree` ✅ |
 | Move to Trash | Finder (so "Put Back" works) | Recycle Bin (untested) | `gio trash` or `trash-put` (untested) |
 
 Releases are not code-signed yet. The Homebrew cask clears the macOS download flag, so brew installs open without a
@@ -106,7 +107,7 @@ compressed copy of your last scans (file and folder names and sizes) in your use
 
 Next, in this order:
 
-1. **Finish shipping.** ✅ Homebrew cask and release builds. Next: the winget package, signing
+1. **Finish shipping.** ✅ Homebrew cask and release builds. Next: winget approval, signing
    (free open-source signing for Windows; macOS notarization costs money), first real tests on Windows and Linux. *(This is the goal.)*
 2. **Honest numbers.** Detect folders it may not read (macOS Full Disk Access) and say so; show purgeable space and
    snapshots so the chart adds up to the disk; handle APFS clones, hard links and iCloud placeholders.
