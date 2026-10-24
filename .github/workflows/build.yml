@@ -93,7 +93,7 @@ jobs:
           foreach ($f in 'mcdiskfree.exe', 'LICENSE') {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "missing $f after install" }
           }
-          $lnk = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\mcdiskfree.lnk'
+          $lnk = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\mcDiskFree.lnk'
           if (-not (Test-Path $lnk)) { throw 'no Start menu entry' }
           Write-Host 'installed: files and Start menu entry are there'
           # The app has to start and keep running (a missing WebView2 runtime, for one, makes it exit at once).

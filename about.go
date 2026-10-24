@@ -9,22 +9,22 @@ import (
 )
 
 // appMenu is the menu of the main window, the way each system does it. On macOS that is the application menu (About,
-// Hide, Quit) plus Edit and Window. On Windows and Linux there is a Help menu with About mcdiskfree. About opens a
+// Hide, Quit) plus Edit and Window. On Windows and Linux there is a Help menu with About mcDiskFree. About opens a
 // window of its own, so that it can have real links (the system's message boxes cannot).
 func appMenu(app *App) *menu.Menu {
 	m := menu.NewMenu()
 	if runtime.GOOS == "darwin" {
-		appMenu := m.AddSubmenu("mcdiskfree")
-		appMenu.AddText("About mcdiskfree", nil, func(*menu.CallbackData) { app.showAbout() })
+		appMenu := m.AddSubmenu("mcDiskFree")
+		appMenu.AddText("About mcDiskFree", nil, func(*menu.CallbackData) { app.showAbout() })
 		appMenu.AddSeparator()
-		appMenu.AddText("Hide mcdiskfree", keys.CmdOrCtrl("h"), func(*menu.CallbackData) { wruntime.Hide(app.ctx) })
+		appMenu.AddText("Hide mcDiskFree", keys.CmdOrCtrl("h"), func(*menu.CallbackData) { wruntime.Hide(app.ctx) })
 		appMenu.AddSeparator()
-		appMenu.AddText("Quit mcdiskfree", keys.CmdOrCtrl("q"), func(*menu.CallbackData) { wruntime.Quit(app.ctx) })
+		appMenu.AddText("Quit mcDiskFree", keys.CmdOrCtrl("q"), func(*menu.CallbackData) { wruntime.Quit(app.ctx) })
 		m.Append(menu.EditMenu())
 		m.Append(menu.WindowMenu())
 		return m
 	}
 	help := m.AddSubmenu("Help")
-	help.AddText("About mcdiskfree", nil, func(*menu.CallbackData) { app.showAbout() })
+	help.AddText("About mcDiskFree", nil, func(*menu.CallbackData) { app.showAbout() })
 	return m
 }

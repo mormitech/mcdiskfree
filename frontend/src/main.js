@@ -55,7 +55,7 @@ async function showStart() {
         return `<div class="disk" data-i="${i}"><div class="t"><b>${esc(v.name)}</b><span>${bytes(used)} used</span></div>` +
             `<div class="p">${esc(v.path)}</div><div class="meter"><i class="${pct > 90 ? 'full' : ''}" style="width:${pct}%"></i></div>` +
             `<div class="f">${bytes(v.free)} free of ${bytes(v.total)}${times[i] ? ' · scanned ' + ago(times[i]) : ''}</div></div>`;
-    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p><p class="ver">mcdiskfree v${await Version()}</p></div>`;
+    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p><p class="ver">mcDiskFree v${await Version()}</p></div>`;
     $('splash').onclick = (e) => {
         const d = e.target.closest('.disk');
         if (d) openTarget(volumes[+d.dataset.i].path);
@@ -471,7 +471,7 @@ async function showAbout() {
     document.body.classList.add('about-mode');
     $('about').hidden = false;
     $('about').innerHTML = `<img class="logo" src="${logo}" alt="" width="132">
-        <h1>mcdiskfree</h1>
+        <h1>mcDiskFree</h1>
         <p class="muted">Version ${esc(await Version())}</p>
         <p>See what is eating your disk: a disk space analyzer with an interactive sunburst chart, for macOS, Windows and Linux.</p>
         <p class="muted">Free and open source, MIT license. No accounts, no ads, no telemetry.</p>

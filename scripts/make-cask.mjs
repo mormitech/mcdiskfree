@@ -41,7 +41,7 @@ process.stdout.write(`cask "mcdiskfree" do
   sha256 "${await sha256(url)}"
 
   url "${urlLine}"
-  name "mcdiskfree"
+  name "mcDiskFree"
   desc "Free disk space analyzer with an interactive sunburst chart"
   homepage "https://github.com/${repo}"
 

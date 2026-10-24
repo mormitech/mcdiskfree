@@ -61,10 +61,10 @@ func main() {
 		}
 	}
 	app := NewApp(mock)
-	title, width, height := "mcdiskfree v"+version(), 1024, 768
+	title, width, height := "mcDiskFree v"+version(), 1024, 768
 	var menuBar *menu.Menu
 	if about {
-		app.mode, title, width, height = "about", "About mcdiskfree", 440, 520
+		app.mode, title, width, height = "about", "About mcDiskFree", 440, 520
 	} else { // the About window has no menu of its own
 		menuBar = appMenu(app)
 	}
