@@ -22,6 +22,8 @@ type App struct {
 	scanAt int64 // unix seconds of the full scan the tree comes from
 	cancel context.CancelFunc
 	mock   *mockFS // set in demo mode: fictional disks instead of the real ones
+	mode   string  // "" for the app, "about" for the About window
+	wins   map[string]*exec.Cmd
 }
 
 func NewApp(mock *mockFS) *App { return &App{mock: mock} }
@@ -275,4 +277,50 @@ func (a *App) Platform() string {
 		return a.mock.goos
 	}
 	return runtime.GOOS
+}
+
+// Mode tells the UI what to show: "" for the app, "about" for the About window.
+func (a *App) Mode() string { return a.mode }
+
+// openWindow opens a window of its own: a second copy of this program, started with the given arguments, because
+// Wails v2 has one window per process. A window that is already open (same key) is not opened twice.
+func (a *App) openWindow(key string, args ...string) error {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.wins == nil {
+		a.wins = map[string]*exec.Cmd{}
+	}
+	if c := a.wins[key]; c != nil && c.ProcessState == nil {
+		return nil
+	}
+	cmd := exec.Command(exe, args...)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	a.wins[key] = cmd
+	go func() {
+		cmd.Wait()
+		a.mu.Lock()
+		delete(a.wins, key)
+		a.mu.Unlock()
+	}()
+	return nil
+}
+
+// showAbout opens the About window.
+func (a *App) showAbout() { a.openWindow("about", "--about") }
+
+// shutdown closes the About window together with the app.
+func (a *App) shutdown(ctx context.Context) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for _, c := range a.wins {
+		if c.Process != nil {
+			c.Process.Kill()
+		}
+	}
 }

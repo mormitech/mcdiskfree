@@ -1,4 +1,4 @@
-<h1 align="center">mcdiskfree</h1>
+<h1 align="center">mcDiskFree</h1>
 
 <p align="center">
   <b>See what is eating your disk.</b><br>
@@ -24,13 +24,13 @@ winget install mormitech.mcdiskfree               # Windows                  (co
 brew install mormitech/tap/mcdiskfree          # Linux x64                (available now)
 ```
 
-Good disk analyzers exist, but the best ones are paid and tied to one operating system. mcdiskfree is an attempt to
+Good disk analyzers exist, but the best ones are paid and tied to one operating system. mcDiskFree is an attempt to
 build the same experience (a clear, interactive picture of where your space went) as a small native app that costs
 nothing, has no accounts, no ads, no telemetry and no upsell, and is installable with the package manager you already use.
 
 ## What it does
 
-mcdiskfree scans a folder or a whole disk and draws it as an interactive **sunburst chart**: every ring is a folder
+mcDiskFree scans a folder or a whole disk and draws it as an interactive **sunburst chart**: every ring is a folder
 level, every slice is sized by the space it takes on disk.
 
 - **Click to drill in.** Click a slice to open the folder, the centre (or **↑ Up**, or right-click) to go back, **⌂ Root** to jump to the top.
@@ -45,7 +45,7 @@ level, every slice is sized by the space it takes on disk.
 
 ## Install
 
-mcdiskfree is an **early preview** (version 0.5). Pick your system:
+mcDiskFree is an **early preview** (version 0.6). Pick your system:
 
 **macOS** (Apple silicon), with [Homebrew](https://brew.sh):
 
@@ -87,7 +87,7 @@ SmartScreen shows **More info → Run anyway**. Free signing for Windows is plan
 
 ## Privacy
 
-mcdiskfree makes no network connections and sends nothing anywhere. The only thing it writes is its cache: a
+mcDiskFree makes no network connections and sends nothing anywhere. The only thing it writes is its cache: a
 compressed copy of your last scans (file and folder names and sizes) in your user cache folder
 (`~/Library/Caches/mcdiskfree`, `%LocalAppData%\mcdiskfree`, `~/.cache/mcdiskfree`). Delete that folder any time.
 

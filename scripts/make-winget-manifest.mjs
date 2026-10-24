@@ -55,12 +55,12 @@ PackageLocale: en-US
 Publisher: mormitech
 PublisherUrl: https://github.com/mormitech
 PublisherSupportUrl: https://github.com/${repo}/issues
-PackageName: mcdiskfree
+PackageName: mcDiskFree
 PackageUrl: https://github.com/${repo}
 License: MIT
 LicenseUrl: https://github.com/${repo}/blob/main/LICENSE
 ShortDescription: Free disk space analyzer with an interactive sunburst chart.
-Description: mcdiskfree scans a folder or a whole disk and shows what takes up the space as an interactive sunburst chart. It shows the free space of the disk, keeps a basket of items to move to the Recycle Bin, and remembers its last scans so it reopens instantly. It makes no network connections.
+Description: mcDiskFree scans a folder or a whole disk and shows what takes up the space as an interactive sunburst chart. It shows the free space of the disk, keeps a basket of items to move to the Recycle Bin, and remembers its last scans so it reopens instantly. It makes no network connections.
 Moniker: mcdiskfree
 Tags:
 - disk

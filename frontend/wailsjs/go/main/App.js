@@ -30,6 +30,10 @@ export function LoadSession() {
   return window['go']['main']['App']['LoadSession']();
 }
 
+export function Mode() {
+  return window['go']['main']['App']['Mode']();
+}
+
 export function Platform() {
   return window['go']['main']['App']['Platform']();
 }

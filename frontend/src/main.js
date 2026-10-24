@@ -1,8 +1,9 @@
 import './style.css';
 import {hierarchy, partition} from 'd3-hierarchy';
 import {arc} from 'd3-shape';
-import {Home, ChooseFolder, Scan, Cancel, View, Reveal, Volumes, FreeSpace, Trash, Version, CachedScan, CacheTime, RescanFolder, Platform, SaveSession, LoadSession} from '../wailsjs/go/main/App';
-import {EventsOn} from '../wailsjs/runtime/runtime';
+import {Home, ChooseFolder, Scan, Cancel, View, Reveal, Volumes, FreeSpace, Trash, Version, CachedScan, CacheTime, RescanFolder, Platform, SaveSession, LoadSession, Mode} from '../wailsjs/go/main/App';
+import {EventsOn, BrowserOpenURL} from '../wailsjs/runtime/runtime';
+import logo from './assets/mormitech-mark.svg';
 
 const $ = (id) => document.getElementById(id);
 const DEPTH = 4;
@@ -45,6 +46,10 @@ const isUnder = (p, dir) => p.startsWith(dir.endsWith(sepOf(dir)) ? dir : dir + 
 
 async function showStart() {
     if (busy) return;
+    // the age of the scan and the free space belong to the disk that was on screen, not to this list
+    $('cache').hidden = true;
+    $('space').hidden = true;
+    $('rescanfolder').hidden = true;
     volumes = (await Volumes()) || [];
     const times = await Promise.all(volumes.map((v) => CacheTime(v.path)));
     $('splash').hidden = false;
@@ -54,7 +59,7 @@ async function showStart() {
         return `<div class="disk" data-i="${i}"><div class="t"><b>${esc(v.name)}</b><span>${bytes(used)} used</span></div>` +
             `<div class="p">${esc(v.path)}</div><div class="meter"><i class="${pct > 90 ? 'full' : ''}" style="width:${pct}%"></i></div>` +
             `<div class="f">${bytes(v.free)} free of ${bytes(v.total)}${times[i] ? ' · scanned ' + ago(times[i]) : ''}</div></div>`;
-    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p><p class="ver">mcdiskfree v${await Version()}</p></div>`;
+    }).join('') + `<p>Click a disk to scan it, or use “Choose folder…” for just one folder.</p></div>`;
     $('splash').onclick = (e) => {
         const d = e.target.closest('.disk');
         if (d) openTarget(volumes[+d.dataset.i].path);
@@ -382,6 +387,7 @@ function resetFor(path) {
     basketError = '';
     $('sun').innerHTML = '';
     $('cache').hidden = true;
+    $('space').hidden = true;   // both come back when the disk has loaded (render)
     $('rescanfolder').hidden = true;
 }
 
@@ -460,4 +466,26 @@ $('root').onclick = () => { if (current && current.path !== scanRoot) open(scanR
 $('rescan').onclick = () => scan(scanRoot);
 $('rescanfolder').onclick = rescanFolder;
 addEventListener('resize', () => { if (current) drawChart(current); });
-restore();
+// ---- About window -----------------------------------------------------------------------------------------------
+// The program started with --about shows this instead of the app. Links open in the system's browser.
+
+const COFFEE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9.5h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5zM16.5 11h1.5a2.5 2.5 0 0 1 0 5h-1.8M8 3.5c-.9 1 .9 1.8 0 2.8M12 3.5c-.9 1 .9 1.8 0 2.8"/></svg>';
+const REPO = 'https://github.com/mormitech/mcdiskfree';
+
+async function showAbout() {
+    document.body.classList.add('about-mode');
+    $('about').hidden = false;
+    $('about').innerHTML = `<img class="logo" src="${logo}" alt="" width="132">
+        <h1>mcDiskFree</h1>
+        <p class="muted">Version ${esc(await Version())}</p>
+        <p>See what is eating your disk: a disk space analyzer with an interactive sunburst chart, for macOS, Windows and Linux.</p>
+        <p class="muted">Free and open source, MIT license. No accounts, no ads, no telemetry.</p>
+        <p class="links"><a href="${REPO}">Website and source code</a><a href="${REPO}/issues">Report a problem</a><a href="${REPO}/blob/main/LICENSE">License</a><a class="coffee" href="https://mormitech.com/support-us/">${COFFEE}Buy me a coffee</a></p>`;
+}
+
+document.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a[href^="http"]');
+    if (a) { ev.preventDefault(); BrowserOpenURL(a.href); }
+});
+
+Mode().then((mode) => { if (mode === 'about') showAbout(); else restore(); });
