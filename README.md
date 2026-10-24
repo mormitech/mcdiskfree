@@ -19,7 +19,7 @@
 > **A disk analyzer that is free, forever, on every platform, and installed the way you install everything else.**
 
 ```
-brew install --cask mormitech/tap/mcdiskfree      # macOS, Apple silicon     (available now)
+brew install mormitech/tap/mcdiskfree      # macOS, Apple silicon     (available now)
 winget install mormitech.mcdiskfree               # Windows                  (coming)
 brew install mormitech/tap/mcdiskfree             # Linux                    (planned)
 ```
@@ -50,7 +50,7 @@ mcdiskfree is an **early preview** (version 0.5). Pick your system:
 **macOS** (Apple silicon), with [Homebrew](https://brew.sh):
 
 ```
-brew install --cask mormitech/tap/mcdiskfree
+brew install mormitech/tap/mcdiskfree
 ```
 
 **Windows**: `winget install mormitech.mcdiskfree` is coming; the package still has to be submitted to and approved by Microsoft. Until then,
@@ -78,7 +78,7 @@ build with `-tags webkit2_41`.
 |---|---|---|---|
 | Builds and tests in CI | ✅ | ✅ (installer installed, started and uninstalled on a runner) | ✅ |
 | Used and tried by hand | ✅ (Apple silicon) | ⏳ not yet | ⏳ not yet |
-| Install | `brew install --cask mormitech/tap/mcdiskfree` ✅ | installer on the release ✅, winget ⏳ | tar.gz on the release ✅, Homebrew formula ⏳ |
+| Install | `brew install mormitech/tap/mcdiskfree` ✅ | installer on the release ✅, winget ⏳ | tar.gz on the release ✅, Homebrew formula ⏳ |
 | Move to Trash | Finder (so "Put Back" works) | Recycle Bin (untested) | `gio trash` or `trash-put` (untested) |
 
 Releases are not code-signed yet. The Homebrew cask clears the macOS download flag, so brew installs open without a
@@ -135,6 +135,8 @@ go test ./...
 | `.github/workflows/build.yml` | builds and tests on macOS, Windows and Linux |
 
 The version lives in one place, `wails.json`.
+
+Changes to `main` go through a pull request. A release is cut by pushing a `v*` tag that matches the version in `wails.json`.
 
 ## License
 
