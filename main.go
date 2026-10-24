@@ -67,7 +67,7 @@ func main() {
 	title, width, height := "mcDiskFree v"+version(), windowW, windowH
 	var menuBar *menu.Menu
 	if about {
-		app.mode, title, width, height = "about", "About mcDiskFree", 440, 520
+		app.mode, title, width, height = "about", "About mcDiskFree", 440, 600
 	} else { // the About window has no menu of its own
 		menuBar = appMenu(app)
 	}

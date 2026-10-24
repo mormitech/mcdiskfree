@@ -55,6 +55,7 @@ aside { width: 340px; border-left: 1px solid var(--line); background: var(--pane
 #cache { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
 #space { margin-left: 14px; color: var(--muted); font-size: 12px; white-space: nowrap; text-align: right; }
 #space .meter { width: 140px; margin: 3px 0 0 auto; height: 5px; }
+#sun path.unscanned { pointer-events: all; fill: var(--muted); opacity: .22; cursor: pointer; }
 #sun path.free { pointer-events: all; fill: none; stroke: var(--muted); stroke-dasharray: 3 3; cursor: default; opacity: .6; }
 #basket { border-top: 1px solid var(--line); padding: 10px 14px; max-height: 45%; overflow-y: auto; }
 #basket .h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: 600; }
@@ -101,6 +102,9 @@ body.about-mode { display: block; overflow: auto; } body.about-mode header, body
 #about a { color: var(--accent); text-decoration: none; cursor: pointer; } #about a:hover { text-decoration: underline; }
 #about a.coffee { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 #about a.coffee svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#about details.disclaimer { margin-top: 14px; max-width: 360px; text-align: left; }
+#about details.disclaimer summary { text-align: center; color: var(--muted); font-size: 12px; cursor: pointer; }
+#about details.disclaimer p { max-width: none; font-size: 11.5px; color: var(--muted); }
 @media (prefers-color-scheme: dark) { #about .logo { filter: invert(1); } }
 
 /* the name in the header */
