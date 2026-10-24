@@ -387,6 +387,7 @@ function resetFor(path) {
     basketError = '';
     $('sun').innerHTML = '';
     $('cache').hidden = true;
+    $('space').hidden = true;   // both come back when the disk has loaded (render)
     $('rescanfolder').hidden = true;
 }
 
