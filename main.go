@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
@@ -35,22 +36,24 @@ func version() string {
 	return p.Info.ProductVersion
 }
 
-// demoFlag reads --mock <platform> (or --mock=<platform>, or --demo): the platform of the fictional disks to show
-// instead of the real ones. It returns "" when demo mode is off. Other arguments, such as the ones macOS adds when
-// it launches an app, are ignored.
-func demoFlag(args []string) string {
-	var platform string
+// startFlags reads --mock <platform> (or --mock=<platform>, or --demo): the platform of the fictional disks to show
+// instead of the real ones ("" when demo mode is off), and --about: show the About window instead of the app. The app
+// starts itself with --about, because Wails v2 has one window per process. Other arguments, such as the ones macOS adds
+// when it launches an app, are ignored.
+func startFlags(args []string) (platform string, about bool) {
 	fs := flag.NewFlagSet("mcdiskfree", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&platform, "mock", "", "show fictional disks of this platform (windows, linux or macos) instead of the real ones")
 	fs.StringVar(&platform, "demo", "", "same as --mock")
+	fs.BoolVar(&about, "about", false, "show the About window")
 	fs.Parse(args)
-	return platform
+	return
 }
 
 func main() {
 	var mock *mockFS
-	if platform := demoFlag(os.Args[1:]); platform != "" {
+	platform, about := startFlags(os.Args[1:])
+	if platform != "" {
 		var err error
 		if mock, err = loadMock(platform); err != nil {
 			fmt.Fprintln(os.Stderr, "mcdiskfree:", err)
@@ -58,19 +61,28 @@ func main() {
 		}
 	}
 	app := NewApp(mock)
+	title, width, height := "mcdiskfree v"+version(), 1024, 768
+	var menuBar *menu.Menu
+	if about {
+		app.mode, title, width, height = "about", "About mcdiskfree", 440, 520
+	} else { // the About window has no menu of its own
+		menuBar = appMenu(app)
+	}
 
-	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "mcdiskfree v" + version(),
-		Width:  1024,
-		Height: 768,
+		Menu:          menuBar,
+		Title:         title,
+		Width:         width,
+		Height:        height,
+		DisableResize: about,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		// Without Mac options Wails leaves the green zoom (maximise) button disabled.
-		Mac:       &mac.Options{},
-		OnStartup: app.startup,
+		Mac:        &mac.Options{},
+		OnStartup:  app.startup,
+		OnShutdown: app.shutdown,
 		Bind: []interface{}{
 			app,
 		},

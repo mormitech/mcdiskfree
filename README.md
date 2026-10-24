@@ -45,7 +45,7 @@ level, every slice is sized by the space it takes on disk.
 
 ## Install
 
-mcdiskfree is an **early preview** (version 0.5). Pick your system:
+mcdiskfree is an **early preview** (version 0.6). Pick your system:
 
 **macOS** (Apple silicon), with [Homebrew](https://brew.sh):
 

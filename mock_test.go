@@ -7,12 +7,21 @@ import (
 
 func TestDemoFlag(t *testing.T) {
 	for args, want := range map[string]string{"--mock=windows": "windows", "--mock linux": "linux", "-demo macos": "macos", "": ""} {
-		if got := demoFlag(strings.Fields(args)); got != want {
-			t.Errorf("demoFlag(%q) = %q, want %q", args, got, want)
+		if got, _ := startFlags(strings.Fields(args)); got != want {
+			t.Errorf("startFlags(%q) = %q, want %q", args, got, want)
 		}
 	}
-	if got := demoFlag([]string{"-psn_0_12345"}); got != "" {
+	if got, about := startFlags([]string{"-psn_0_12345"}); got != "" || about {
 		t.Errorf("unknown flags must be ignored, got %q", got)
+	}
+}
+
+func TestAboutFlag(t *testing.T) {
+	if _, about := startFlags([]string{"--about"}); !about {
+		t.Error("--about not read")
+	}
+	if _, about := startFlags(nil); about {
+		t.Error("about must be off by default")
 	}
 }
 
